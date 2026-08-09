@@ -3,20 +3,121 @@
         xmlns:vm="using:UI.ViewModels"
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
-        mc:Ignorable="d" d:DesignWidth="800" d:DesignHeight="450"
+        mc:Ignorable="d" d:DesignWidth="900" d:DesignHeight="650"
         x:Class="UI.Views.MainWindow"
         x:DataType="vm:MainViewModel"
         Icon="/Assets/avalonia-logo.ico"
-        Title="UI">
+        Title="Розв'язувач нонограм"
+        Width="900" Height="650"
+        MinWidth="600" MinHeight="450"
+        Background="#1E1F26">
 
     <Design.DataContext>
-        <!-- This only sets the DataContext for the previewer in an IDE,
-             to set the actual DataContext for runtime, set the DataContext property in code (look at App.axaml.cs) -->
         <vm:MainViewModel />
     </Design.DataContext>
 
-    <TextBox Text="{Binding Greeting}"
-             HorizontalAlignment="Center"
-             VerticalAlignment="Center" />
+    <Window.Resources>
+        <SolidColorBrush x:Key="AccentBrush" Color="#5B8CFF" />
+        <SolidColorBrush x:Key="SurfaceBrush" Color="#2A2C3A" />
+        <SolidColorBrush x:Key="SurfaceHoverBrush" Color="#343648" />
+        <SolidColorBrush x:Key="BorderBrush" Color="#3D3F52" />
+        <SolidColorBrush x:Key="MutedTextBrush" Color="#9A9CB0" />
+    </Window.Resources>
 
+    <Window.Styles>
+        <Style Selector="Button.primary">
+            <Setter Property="Background" Value="{StaticResource AccentBrush}" />
+            <Setter Property="Foreground" Value="White" />
+            <Setter Property="FontWeight" Value="SemiBold" />
+            <Setter Property="CornerRadius" Value="8" />
+            <Setter Property="Padding" Value="18,10" />
+            <Setter Property="Cursor" Value="Hand" />
+        </Style>
+        <Style Selector="Button.primary:pointerover /template/ ContentPresenter">
+            <Setter Property="Background" Value="#4A7AE8" />
+        </Style>
+    </Window.Styles>
+
+    <Grid RowDefinitions="Auto,*,Auto" Margin="20">
+
+        <Border Grid.Row="0"
+                Background="{StaticResource SurfaceBrush}"
+                CornerRadius="12"
+                Padding="20,16"
+                Margin="0,0,0,16">
+            <Grid ColumnDefinitions="*,Auto">
+                <StackPanel Grid.Column="0" VerticalAlignment="Center">
+                    <TextBlock Text="Nonogram solver"
+                               FontSize="20"
+                               FontWeight="Bold"
+                               Foreground="White" />
+                    <TextBlock Text="{Binding LoadedFileName, FallbackValue='Файл не завантажено'}"
+                               Foreground="{StaticResource MutedTextBrush}"
+                               FontSize="13"
+                               Margin="0,4,0,0" />
+                </StackPanel>
+
+                <Button Grid.Column="1"
+                        Classes="primary"
+                        Content="Load JSON file"
+                        Command="{Binding LoadJsonCommand}"
+                        VerticalAlignment="Center" />
+            </Grid>
+        </Border>
+
+        <Border Grid.Row="1"
+                Background="{StaticResource SurfaceBrush}"
+                BorderBrush="{StaticResource BorderBrush}"
+                BorderThickness="1"
+                CornerRadius="12"
+                Padding="20">
+            <Grid>
+
+                <StackPanel VerticalAlignment="Center"
+                            HorizontalAlignment="Center"
+                            Spacing="8"
+                            IsVisible="{Binding !IsPuzzleLoaded}">
+                    <TextBlock Text="🧩"
+                               FontSize="42"
+                               HorizontalAlignment="Center"
+                               Opacity="0.6" />
+                    <TextBlock Text="Download the file to see the nonogram grid."
+                               Foreground="{StaticResource MutedTextBrush}"
+                               FontSize="14"
+                               HorizontalAlignment="Center" />
+                </StackPanel>
+
+                <ScrollViewer HorizontalScrollBarVisibility="Auto"
+                              VerticalScrollBarVisibility="Auto"
+                              IsVisible="{Binding IsPuzzleLoaded}">
+                    <ItemsControl x:Name="NonogramGrid"
+                                  ItemsSource="{Binding PuzzleRows}"
+                                  HorizontalAlignment="Center"
+                                  VerticalAlignment="Center">
+                    </ItemsControl>
+                </ScrollViewer>
+            </Grid>
+        </Border>
+
+        <Border Grid.Row="2"
+                Background="{StaticResource SurfaceBrush}"
+                CornerRadius="12"
+                Padding="16,10"
+                Margin="0,16,0,0">
+            <Grid ColumnDefinitions="*,Auto">
+                <TextBlock Grid.Column="0"
+                           Text="{Binding StatusText, FallbackValue='Ready for operation'}"
+                           Foreground="{StaticResource MutedTextBrush}"
+                           VerticalAlignment="Center" />
+
+                <ProgressBar Grid.Column="1"
+                             Width="140"
+                             Height="6"
+                             IsIndeterminate="{Binding IsSolving}"
+                             IsVisible="{Binding IsSolving}"
+                             VerticalAlignment="Center" />
+            </Grid>
+        </Border>
+
+    </Grid>
 </Window>
