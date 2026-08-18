@@ -1,6 +1,7 @@
 ﻿<Window xmlns="https://github.com/avaloniaui"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:vm="using:UI.ViewModels"
+        xmlns:conv="using:UI.Converters"
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         mc:Ignorable="d" d:DesignWidth="900" d:DesignHeight="650"
@@ -22,6 +23,7 @@
         <SolidColorBrush x:Key="SurfaceHoverBrush" Color="#343648" />
         <SolidColorBrush x:Key="BorderBrush" Color="#3D3F52" />
         <SolidColorBrush x:Key="MutedTextBrush" Color="#9A9CB0" />
+        <conv:CellStateToBrushConverter x:Key="CellStateToBrushConverter" />
     </Window.Resources>
 
     <Window.Styles>
@@ -36,10 +38,19 @@
         <Style Selector="Button.primary:pointerover /template/ ContentPresenter">
             <Setter Property="Background" Value="#4A7AE8" />
         </Style>
+
+        <!-- Спільний стиль для клітинки сітки -->
+        <Style Selector="Border.cell">
+            <Setter Property="Width" Value="28" />
+            <Setter Property="Height" Value="28" />
+            <Setter Property="BorderBrush" Value="{StaticResource BorderBrush}" />
+            <Setter Property="BorderThickness" Value="0.5" />
+        </Style>
     </Window.Styles>
 
     <Grid RowDefinitions="Auto,*,Auto" Margin="20">
 
+        <!-- Шапка -->
         <Border Grid.Row="0"
                 Background="{StaticResource SurfaceBrush}"
                 CornerRadius="12"
@@ -47,7 +58,7 @@
                 Margin="0,0,0,16">
             <Grid ColumnDefinitions="*,Auto">
                 <StackPanel Grid.Column="0" VerticalAlignment="Center">
-                    <TextBlock Text="Nonogram solver"
+                    <TextBlock Text="Розв'язувач нонограм"
                                FontSize="20"
                                FontWeight="Bold"
                                Foreground="White" />
@@ -59,12 +70,13 @@
 
                 <Button Grid.Column="1"
                         Classes="primary"
-                        Content="Load JSON file"
+                        Content="Відкрити файл кросворду"
                         Command="{Binding LoadJsonCommand}"
                         VerticalAlignment="Center" />
             </Grid>
         </Border>
 
+        <!-- Центральна область: сітка нонограми -->
         <Border Grid.Row="1"
                 Background="{StaticResource SurfaceBrush}"
                 BorderBrush="{StaticResource BorderBrush}"
@@ -73,6 +85,7 @@
                 Padding="20">
             <Grid>
 
+                <!-- Плейсхолдер, поки файл не завантажено -->
                 <StackPanel VerticalAlignment="Center"
                             HorizontalAlignment="Center"
                             Spacing="8"
@@ -81,24 +94,119 @@
                                FontSize="42"
                                HorizontalAlignment="Center"
                                Opacity="0.6" />
-                    <TextBlock Text="Download the file to see the nonogram grid."
+                    <TextBlock Text="Завантажте файл, щоб побачити сітку нонограми"
                                Foreground="{StaticResource MutedTextBrush}"
                                FontSize="14"
                                HorizontalAlignment="Center" />
                 </StackPanel>
 
+                <!-- Сітка + підказки -->
                 <ScrollViewer HorizontalScrollBarVisibility="Auto"
                               VerticalScrollBarVisibility="Auto"
                               IsVisible="{Binding IsPuzzleLoaded}">
-                    <ItemsControl x:Name="NonogramGrid"
-                                  ItemsSource="{Binding PuzzleRows}"
-                                  HorizontalAlignment="Center"
-                                  VerticalAlignment="Center">
-                    </ItemsControl>
+                    <Grid HorizontalAlignment="Center"
+                          VerticalAlignment="Center"
+                          RowDefinitions="Auto,Auto"
+                          ColumnDefinitions="Auto,Auto">
+
+                        <!-- Кутовий спейсер -->
+                        <Border Grid.Row="0" Grid.Column="0" />
+
+                        <!-- Підказки стовпців (зверху) -->
+                        <ItemsControl Grid.Row="0" Grid.Column="1"
+                                      ItemsSource="{Binding ColumnHints}">
+                            <ItemsControl.ItemsPanel>
+                                <ItemsPanelTemplate>
+                                    <StackPanel Orientation="Horizontal" />
+                                </ItemsPanelTemplate>
+                            </ItemsControl.ItemsPanel>
+                            <ItemsControl.ItemTemplate>
+                                <DataTemplate DataType="vm:NonogramHintLineViewModel">
+                                    <StackPanel Width="28"
+                                                VerticalAlignment="Bottom"
+                                                HorizontalAlignment="Center">
+                                        <ItemsControl ItemsSource="{Binding Hints}">
+                                            <ItemsControl.ItemTemplate>
+                                                <DataTemplate x:DataType="x:Int32">
+                                                    <TextBlock Text="{Binding}"
+                                                               FontSize="12"
+                                                               Foreground="White"
+                                                               HorizontalAlignment="Center"
+                                                               Margin="0,1" />
+                                                </DataTemplate>
+                                            </ItemsControl.ItemTemplate>
+                                        </ItemsControl>
+                                    </StackPanel>
+                                </DataTemplate>
+                            </ItemsControl.ItemTemplate>
+                        </ItemsControl>
+
+                        <!-- Підказки рядків (зліва) -->
+                        <ItemsControl Grid.Row="1" Grid.Column="0"
+                                      ItemsSource="{Binding RowHints}">
+                            <ItemsControl.ItemsPanel>
+                                <ItemsPanelTemplate>
+                                    <StackPanel Orientation="Vertical" />
+                                </ItemsPanelTemplate>
+                            </ItemsControl.ItemsPanel>
+                            <ItemsControl.ItemTemplate>
+                                <DataTemplate DataType="vm:NonogramHintLineViewModel">
+                                    <ItemsControl ItemsSource="{Binding Hints}"
+                                                  Height="28"
+                                                  VerticalAlignment="Center">
+                                        <ItemsControl.ItemsPanel>
+                                            <ItemsPanelTemplate>
+                                                <StackPanel Orientation="Horizontal"
+                                                            HorizontalAlignment="Right" />
+                                            </ItemsPanelTemplate>
+                                        </ItemsControl.ItemsPanel>
+                                        <ItemsControl.ItemTemplate>
+                                            <DataTemplate x:DataType="x:Int32">
+                                                <TextBlock Text="{Binding}"
+                                                           FontSize="12"
+                                                           Foreground="White"
+                                                           VerticalAlignment="Center"
+                                                           Margin="4,0" />
+                                            </DataTemplate>
+                                        </ItemsControl.ItemTemplate>
+                                    </ItemsControl>
+                                </DataTemplate>
+                            </ItemsControl.ItemTemplate>
+                        </ItemsControl>
+
+                        <!-- Сама сітка клітинок -->
+                        <ItemsControl Grid.Row="1" Grid.Column="1"
+                                      ItemsSource="{Binding PuzzleRows}">
+                            <ItemsControl.ItemsPanel>
+                                <ItemsPanelTemplate>
+                                    <StackPanel Orientation="Vertical" />
+                                </ItemsPanelTemplate>
+                            </ItemsControl.ItemsPanel>
+                            <ItemsControl.ItemTemplate>
+                                <DataTemplate DataType="vm:NonogramRowViewModel">
+                                    <ItemsControl ItemsSource="{Binding Cells}">
+                                        <ItemsControl.ItemsPanel>
+                                            <ItemsPanelTemplate>
+                                                <StackPanel Orientation="Horizontal" />
+                                            </ItemsPanelTemplate>
+                                        </ItemsControl.ItemsPanel>
+                                        <ItemsControl.ItemTemplate>
+                                            <DataTemplate DataType="vm:NonogramCellViewModel">
+                                                <Border Classes="cell"
+                                                        Background="{Binding State, Converter={StaticResource CellStateToBrushConverter}}" />
+                                            </DataTemplate>
+                                        </ItemsControl.ItemTemplate>
+                                    </ItemsControl>
+                                </DataTemplate>
+                            </ItemsControl.ItemTemplate>
+                        </ItemsControl>
+
+                    </Grid>
                 </ScrollViewer>
             </Grid>
         </Border>
 
+        <!-- Статус-бар -->
         <Border Grid.Row="2"
                 Background="{StaticResource SurfaceBrush}"
                 CornerRadius="12"
@@ -106,7 +214,7 @@
                 Margin="0,16,0,0">
             <Grid ColumnDefinitions="*,Auto">
                 <TextBlock Grid.Column="0"
-                           Text="{Binding StatusText, FallbackValue='Ready for operation'}"
+                           Text="{Binding StatusText, FallbackValue='Готово до роботи'}"
                            Foreground="{StaticResource MutedTextBrush}"
                            VerticalAlignment="Center" />
 
